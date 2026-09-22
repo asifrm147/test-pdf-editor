@@ -1,0 +1,27 @@
+{
+  "name": "lemonade-forms",
+  "private": true,
+  "type": "module",
+  "description": "Lemonade Forms — HIPAA PDF editor + fax/email/chart pipeline",
+  "dependencies": {
+    "@azure/storage-blob": "^12.33.0",
+    "googleapis": "^144.0.0",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.6.82",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-signature-canvas": "^1.0.6"
+  },
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "node server.mjs",
+    "dev:web": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^9.0.1",
+    "express": "^4.22.3",
+    "vite": "^5.4.0"
+  }
+}
