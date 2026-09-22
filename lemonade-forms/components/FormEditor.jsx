@@ -211,7 +211,7 @@ export default function FormEditor({
   }, [onSaveSignature]);
 
   // ---- SAVE: write values + overlays + stamp, flatten, hand up ----
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (action) => {
     if (!bytes) return;
     setBusy(true);
     setError(null);
@@ -266,7 +266,7 @@ export default function FormEditor({
 
       const out = await pdfDoc.save();
       const filename = (source?.filename || "form").replace(/\.pdf$/i, "") + "-completed.pdf";
-      await onSave?.({ bytes: out, filename });
+      await onSave?.({ bytes: out, filename, action });
     } catch (e) {
       setError(e.message || String(e));
     } finally {
@@ -275,7 +275,7 @@ export default function FormEditor({
   }, [bytes, isFillable, fieldValues, overlays, currentUser, source, onSave]);
 
   const modeLabel = useMemo(
-    () => (isFillable ? "Fillable form — type into the fields" : "Overlay mode — click to place text / checkmarks / signature"),
+    () => (isFillable ? "Fillable form — type into the fields" : "Click on the page to place your signature"),
     [isFillable]
   );
 
@@ -283,22 +283,16 @@ export default function FormEditor({
   return (
     <div className="fe-root" style={styles.root}>
       <div style={styles.toolbar}>
+        <button style={styles.back} onClick={onCancel}>← Back</button>
         <strong style={{ marginRight: 12 }}>{source?.filename}</strong>
         <span style={styles.badge}>{modeLabel}</span>
         <div style={{ flex: 1 }} />
-        {!isFillable && (
-          <>
-            <ToolBtn active={tool === "text"} onClick={() => setTool("text")}>Text</ToolBtn>
-            <ToolBtn active={tool === "check"} onClick={() => setTool("check")}>✓ Check</ToolBtn>
-          </>
-        )}
         <ToolBtn active={tool === "signature"} onClick={() => (signatureUrl ? setTool("signature") : setSigOpen(true))}>
           Signature
         </ToolBtn>
-        <button style={styles.secondary} onClick={onCancel}>Cancel</button>
-        <button style={styles.primary} disabled={busy} onClick={handleSave}>
-          {busy ? "Saving…" : "Save"}
-        </button>
+        <button style={styles.action} disabled={busy} onClick={() => handleSave("fax_lni")}>Fax L&amp;I</button>
+        <button style={styles.action} disabled={busy} onClick={() => handleSave("fax_number")}>Fax #</button>
+        <button style={styles.action} disabled={busy} onClick={() => handleSave("email")}>Email</button>
       </div>
 
       {error && <div style={styles.error}>{error}</div>}
@@ -396,10 +390,12 @@ function ToolBtn({ active, onClick, children }) {
 
 const styles = {
   root: { display: "flex", flexDirection: "column", height: "100%", background: "#f1f5f9" },
+  back: { fontSize: 13, padding: "6px 10px", border: "1px solid #cbd5e1", background: "#fff", borderRadius: 6, cursor: "pointer", marginRight: 4 },
   toolbar: { display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: "#fff", borderBottom: "1px solid #e2e8f0", position: "sticky", top: 0, zIndex: 5 },
   badge: { fontSize: 12, color: "#475569", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 999, padding: "3px 10px" },
   tool: { fontSize: 13, padding: "6px 10px", border: "1px solid #cbd5e1", background: "#fff", borderRadius: 6, cursor: "pointer" },
   toolActive: { background: "#0f766e", color: "#fff", borderColor: "#0f766e" },
+  action: { fontSize: 13, padding: "7px 14px", background: "#0f766e", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", marginLeft: 6 },
   primary: { fontSize: 13, padding: "7px 16px", background: "#0f766e", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer" },
   secondary: { fontSize: 13, padding: "7px 12px", background: "#fff", color: "#0f172a", border: "1px solid #cbd5e1", borderRadius: 6, cursor: "pointer" },
   error: { background: "#fef2f2", color: "#991b1b", padding: "8px 14px", fontSize: 13, borderBottom: "1px solid #fecaca" },

@@ -19,17 +19,17 @@ export async function findPatientByClaim(claim) {
   if (!res.ok) throw new Error(`Knack find failed: ${res.status}`);
   return (await res.json()).records?.[0] || null;
 }
-export async function createPatient({ claim, name, dob }) {
-  if (MOCK) { const a = await mockRead(); const rec = { id: "mock_" + Date.now(), [KNACK.fields.claimNumber]: claim, [KNACK.fields.name]: name, [KNACK.fields.dob]: dob, notes: [] }; a.push(rec); await mockWrite(a); return rec; }
-  const body = { [KNACK.fields.claimNumber]: claim, [KNACK.fields.name]: name, [KNACK.fields.dob]: dob };
+export async function createPatient({ claim, name, dob, phone }) {
+  if (MOCK) { const a = await mockRead(); const rec = { id: "mock_" + Date.now(), [KNACK.fields.claimNumber]: claim, [KNACK.fields.name]: name, [KNACK.fields.dob]: dob, [KNACK.fields.phone]: phone, notes: [] }; a.push(rec); await mockWrite(a); return rec; }
+  const body = { [KNACK.fields.claimNumber]: claim, [KNACK.fields.name]: name, [KNACK.fields.dob]: dob, [KNACK.fields.phone]: phone };
   const res = await fetch(objUrl(), { method: "POST", headers: headers(), body: JSON.stringify(body) });
   if (!res.ok) throw new Error(`Knack create failed: ${res.status} ${await res.text()}`);
   return res.json();
 }
-export async function ensureChart({ claim, name, dob }) {
+export async function ensureChart({ claim, name, dob, phone }) {
   const existing = await findPatientByClaim(claim);
   if (existing) return { record: existing, created: false };
-  return { record: await createPatient({ claim, name, dob }), created: true };
+  return { record: await createPatient({ claim, name, dob, phone }), created: true };
 }
 export async function attachCompletedForm(recordId, meta) {
   const note = `${new Date().toISOString()} · ${meta.formType} · ${meta.filename}` + (meta.faxId ? ` · fax ${meta.faxId}` : "") + ` · ${meta.secureLink}`;

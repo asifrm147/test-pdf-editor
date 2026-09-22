@@ -5,6 +5,7 @@ import path from "path";
 import { promises as fs } from "fs";
 import saveHandler from "./api/forms/save.js";
 import lookupHandler from "./api/chart/lookup.js";
+import ensureHandler from "./api/chart/ensure.js";
 import webhookHandler from "./api/fax/webhook.js";
 
 const app = express();
@@ -12,6 +13,7 @@ app.use(express.json({ limit: "30mb" })); // completed PDFs (base64) can be larg
 
 app.post("/api/forms/save", (req, res) => saveHandler(req, res));
 app.get("/api/chart/lookup", (req, res) => lookupHandler(req, res));
+app.post("/api/chart/ensure", (req, res) => ensureHandler(req, res));
 app.post("/api/fax/webhook", (req, res) => webhookHandler(req, res));
 
 app.get("/mock-blob/:key", async (req, res) => {

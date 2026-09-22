@@ -41,16 +41,18 @@ Flip any subsystem to **live** by setting its env vars (e.g. `MEDSENDER_API_KEY=
   draw-once-reuse signature; auto **"Submitted by …"** stamp; flattens on save.
 - **Send/save pipeline** (`api/forms/save.js`) — store PDF → chart match/create → attach
   reference → dispatch fax/email/download, in one call.
-- **Fax** — Medsender REST API (`POST /sent_faxes`, multipart, Bearer key); vendor-pluggable
-  via `lib/fax/faxProvider.js`. (Medsender & Notifyre are the same company — Notifyre is a
-  drop-in alternate surface if you ever want it.)
+- **Fax** — Sinch Fax API v3 (`POST /v3/projects/{projectId}/faxes`, multipart, Basic auth);
+  free self-serve BAA in the Sinch Build dashboard. Vendor-pluggable via `lib/fax/faxProvider.js`
+  (Medsender kept as a drop-in alternate: `FAX_PROVIDER=medsender`).
 - **Storage** — Azure Blob for the PDF bytes + time-limited **secure links** (keeps heavy
   files off the Knack API budget).
 - **Chart** — Knack match-on-claim / create / attach.
 - **Email** — Gmail (Workspace, as `noreply@`): attachment for internal recipients,
   **secure link** for external ones (PHI never sits in an outside inbox).
-- **UI** — `FormsHome.jsx` (APF / Prior Auth / Assessments / BHI buckets + upload) and
-  `SendDialog.jsx` (claim/name/DOB with chart pre-fill, action picker).
+- **UI** — `FormsHome.jsx` (category buckets + upload), `SendDialog.jsx` (three actions only:
+  Fax to L&I / Fax to a number / Email), and `PatientDialog.jsx`. Editor has a Back button.
+- **Uploads are gated** — uploading a PDF first requires name, DOB, phone, and claim #, then
+  finds-or-creates the chart (`/api/chart/ensure`) before the form opens, so nothing files unfiled.
 
 ## Data flow
 
@@ -67,8 +69,8 @@ FormEditor  →  onSave(bytes)  →  SendDialog (claim/name/DOB + action)
 
 1. **Install deps** (see `package.json`):
    `npm i @azure/storage-blob googleapis pdf-lib pdfjs-dist react-signature-canvas`  (Medsender needs no SDK — native fetch/FormData)
-2. **Env** — copy `.env.example` into Vercel project env. Start with the **Medsender
-   sandbox key** (`sk_test_…`) so you can test faxing with no PHI and no BAA-wait.
+2. **Env** — copy `.env.example` into Vercel project env. Set the **Sinch** project id, API
+   key/secret, and fax number (all from the Sinch Build dashboard, where you also sign the free BAA).
 3. **Knack keys** — in `config/formsConfig.js`, replace the `field_TODO_*` values and
    confirm the Patients object key. If your patient name is split first/last, adjust
    `createPatient()` in `lib/chart/knackChart.js`.
@@ -88,13 +90,16 @@ FormEditor  →  onSave(bytes)  →  SendDialog (claim/name/DOB + action)
 - `api/*.js` are written as Vercel Node handlers (`export default (req,res)`). On Next App
   Router, wrap each as a route handler (`export async function POST(req)`), same logic.
 
-## Test with the Medsender sandbox
+## Test with Sinch
 
-1. Provision a test fax number: `POST /fax_numbers` with `{"fax_number":{"area_code":"509"}}`;
-   set `MEDSENDER_FAX_NUMBER` to the number it returns and `MEDSENDER_API_KEY` to your `sk_test_…`.
-2. Open a form → fill → **Save** → in SendDialog choose **Fax to L&I** → Confirm.
-3. `/api/forms/save` returns `{ fax: { faxId } }`; confirm it in the Medsender dashboard.
-   Swap `sk_test_…` for the live key once the BAA scope is confirmed.
+1. Set `SINCH_PROJECT_ID`, `SINCH_API_KEY`, `SINCH_API_SECRET`, `SINCH_FAX_NUMBER` from the
+   Build dashboard. In the dashboard's HIPAA section, uncheck both storage boxes and sign the BAA.
+2. Sinch has a built-in test target: sending **to `+19898989898`** simulates a full fax with no
+   charge. Point "Fax to a number" at it to validate end to end before faxing L&I for real.
+3. `/api/forms/save` returns `{ fax: { faxId, status } }`; confirm in the Sinch dashboard.
+
+**Webhook note:** Sinch delivery webhooks are `multipart/form-data` POSTs (not JSON) — `api/fax/webhook.js`
+needs a multipart parser (e.g. `multer`) when you wire live status; the handler notes this.
 
 ## Known nit to nudge later
 

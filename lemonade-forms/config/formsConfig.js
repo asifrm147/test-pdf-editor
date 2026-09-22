@@ -11,6 +11,7 @@ export const KNACK = {
     claimNumber: "field_TODO_claim",        // TODO
     name: "field_TODO_name",                // TODO
     dob: "field_TODO_dob",                  // TODO
+    phone: "field_TODO_phone",              // TODO
     isTestPatient: "field_TODO_testflag",   // optional
     documentsConnection: "field_TODO_docs", // TODO
   },
@@ -21,11 +22,18 @@ export const AZURE = {
   sasTtlMinutes: 60 * 24 * 7,
 };
 export const FAX = {
-  provider: process.env.FAX_PROVIDER || "medsender",
-  medsender: {
+  provider: process.env.FAX_PROVIDER || "sinch",
+  sinch: {
+    baseUrl: process.env.SINCH_FAX_BASE || "https://fax.api.sinch.com",
+    projectId: process.env.SINCH_PROJECT_ID,
+    apiKey: process.env.SINCH_API_KEY,
+    apiSecret: process.env.SINCH_API_SECRET,
+    sendFrom: process.env.SINCH_FAX_NUMBER,   // your Sinch fax number (E.164)
+  },
+  medsender: {                                 // kept as same-company alternate
     apiBase: process.env.MEDSENDER_API_BASE || "https://api.medsender.com/api/v2",
-    apiKey: process.env.MEDSENDER_API_KEY,       // sk_test_... sandbox, sk_live_... prod
-    sendFrom: process.env.MEDSENDER_FAX_NUMBER,  // provisioned Medsender fax number (E.164)
+    apiKey: process.env.MEDSENDER_API_KEY,
+    sendFrom: process.env.MEDSENDER_FAX_NUMBER,
   },
 };
 export const GMAIL = {
